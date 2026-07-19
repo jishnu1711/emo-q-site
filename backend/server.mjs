@@ -96,8 +96,10 @@ export function parseIntent(input, referenceDate = new Date()) {
   if (!text) return { type: "empty" };
   const calendar = parseCalendar(text, referenceDate);
   if (calendar) return calendar;
-  const timing = parseFrequency(text);
-  if (!timing || !/(?:remind|reminder|remember|want to|need to)/i.test(text)) return { type: "unknown" };
+  let timing = parseFrequency(text);
+  const hasReminderIntent = /(?:remind|reminder|remember|want to|need to)/i.test(text);
+  if (!hasReminderIntent) return { type: "unknown" };
+  timing ??= { frequency: "In 20 minutes", intervalMs: 1_200_000, oneShot: true };
   const desire = text.match(/\b(?:i want|i need)\s+to\s+(.+?)(?=\s*(?:[,.]|and)?\s*remind\s+(?:me|us)|\s+(?:every|in)\s+\d*\s*(?:minute|minutes|hour|hours|day|days)|$)/i);
   let title = desire?.[1] || text.replace(/^.*?\b(?:remind\s+(?:me|us)|set\s+(?:a\s+)?reminder)\s+(?:to\s+)?/i, "");
   title = title

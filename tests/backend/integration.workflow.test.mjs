@@ -12,6 +12,9 @@ test("parses natural recurring reminders without losing the requested action", (
   assert.deepEqual(parseIntent("Can you set a reminder to drink water in 20 minutes", new Date("2026-07-19T10:00:00")), {
     type: "reminder", title: "Drink water", frequency: "In 20 minutes", intervalMs: 1_200_000, oneShot: true
   });
+  assert.deepEqual(parseIntent("Can you set a reminder to drink water", new Date("2026-07-19T10:00:00")), {
+    type: "reminder", title: "Drink water", frequency: "In 20 minutes", intervalMs: 1_200_000, oneShot: true
+  });
   assert.equal(parseIntent("Remind me to stretch every 15 minutes").intervalMs, 900_000);
 });
 

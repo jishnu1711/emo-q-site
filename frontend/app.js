@@ -71,6 +71,7 @@ import { getSpeechRecognition } from "/speech_to_text/browser_speech_recognition
     restartDelay: 250,
     speechSession: null,
     utteranceText: "",
+    pendingTranscript: "",
     finalTimer: null,
     visionReady: false,
     visionChecked: false,
@@ -282,8 +283,19 @@ import { getSpeechRecognition } from "/speech_to_text/browser_speech_recognition
 
   function handleSpokenUtterance(transcript) {
     const text = String(transcript || "").trim(); if (!text) return;
+    clearTimeout(app.finalTimer);
+    app.pendingTranscript = "";
+    app.utteranceText = "";
     if (!app.speechSession) beginSpeechSession(`Heard · ${text}`);
     submitTranscript(text);
+  }
+
+  function scheduleFinalTranscript() {
+    clearTimeout(app.finalTimer);
+    app.finalTimer = setTimeout(() => {
+      const text = (app.utteranceText || app.pendingTranscript).trim();
+      handleSpokenUtterance(text);
+    }, speechFinalDelayMs);
   }
 
   function startRecognition() {
@@ -316,7 +328,7 @@ import { getSpeechRecognition } from "/speech_to_text/browser_speech_recognition
     setSpeechDiagnostic("supported");
     recognition.continuous = true; recognition.interimResults = true; recognition.maxAlternatives = 3; recognition.lang = document.documentElement.lang || "en-IN";
     recognition.onstart = () => { app.recognitionRunning = true; app.speechBlocked = false; app.manualRestart = false; app.restartDelay = 250; setSpeechDiagnostic("active"); setState("ready", "Listening continuously. Speak when you need me."); };
-    recognition.onspeechstart = () => { app.utteranceText = ""; clearTimeout(app.finalTimer); if (!app.speechSession) beginSpeechSession(); };
+    recognition.onspeechstart = () => { app.utteranceText = ""; app.pendingTranscript = ""; clearTimeout(app.finalTimer); setText(ui.transcript, ""); if (!app.speechSession) beginSpeechSession(); };
     recognition.onresult = event => {
       let interim = "";
       for (let index = event.resultIndex; index < event.results.length; index++) {
@@ -324,16 +336,11 @@ import { getSpeechRecognition } from "/speech_to_text/browser_speech_recognition
         const selected = result[0].transcript;
         if (result.isFinal) app.utteranceText += `${selected} `; else interim += selected;
       }
-      if (interim) { setState("hearing"); setText(ui.transcript, interim); }
-      if (app.utteranceText) {
-        clearTimeout(app.finalTimer);
-        app.finalTimer = setTimeout(() => { const text = app.utteranceText; app.utteranceText = ""; handleSpokenUtterance(text); }, speechFinalDelayMs);
-      }
+      app.pendingTranscript = `${app.utteranceText}${interim}`.trim();
+      if (app.pendingTranscript) { setState("hearing"); setText(ui.transcript, app.pendingTranscript); scheduleFinalTranscript(); }
     };
     recognition.onspeechend = () => {
-      if (!app.utteranceText) return;
-      clearTimeout(app.finalTimer);
-      app.finalTimer = setTimeout(() => { const text = app.utteranceText; app.utteranceText = ""; handleSpokenUtterance(text); }, speechFinalDelayMs);
+      if (app.pendingTranscript || app.utteranceText) scheduleFinalTranscript();
     };
     recognition.onerror = event => {
       const error = event.error || "unknown";
