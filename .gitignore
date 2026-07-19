@@ -1,0 +1,21 @@
+# Dependencies and virtual environments
+node_modules/
+face_recognition/.venv/
+.venv/
+
+# Python caches and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+
+# Local runtime data
+storage/state.json
+face_recognition/data/
+face_recognition/config.json
+
+# Logs and OS/editor files
+*.log
+.DS_Store
+Thumbs.db
+.vscode/

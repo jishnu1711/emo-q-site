@@ -1,0 +1,18 @@
+{
+  "camera_index": 0,
+  "camera_width": 640,
+  "camera_height": 480,
+  "camera_fps": 30,
+  "inference_fps": 10,
+  "detector_score_threshold": 0.85,
+  "detector_nms_threshold": 0.3,
+  "detector_top_k": 50,
+  "identity_threshold": 0.42,
+  "identity_margin": 0.08,
+  "identity_ttl_seconds": 2.0,
+  "min_face_size": 90,
+  "min_blur_variance": 45.0,
+  "enrollment_samples": 20,
+  "host": "127.0.0.1",
+  "port": 8001
+}

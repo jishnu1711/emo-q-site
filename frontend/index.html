@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f3ef">
+  <meta name="color-scheme" content="light dark">
+  <title>Echo Q</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" type="module"></script>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <span class="ambient__glow ambient__glow--one"></span>
+    <span class="ambient__glow ambient__glow--two"></span>
+  </div>
+
+  <main class="shell" id="app" data-assistant-state="ready">
+    <header class="topbar">
+      <a class="brand" href="#home" aria-label="Echo Q home">
+        <span class="brand__mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>Echo Q</span>
+      </a>
+
+      <div class="clock" aria-label="Current date and time">
+        <time id="clockTime">9:41</time>
+        <span id="clockDate">Sunday, 19 July</span>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="system-status" aria-label="Echo Q system status">
+          <div class="status-pill" id="serviceIndicator" data-status="checking" title="Local Echo Q service">
+            <span class="status-dot" id="serviceDot" aria-hidden="true"></span>
+            <span id="serviceStatus">Checking system</span>
+          </div>
+          <div class="status-pill" id="micIndicator" data-status="waiting" title="Microphone status">
+            <span class="status-dot" id="micDot" aria-hidden="true"></span>
+            <span id="micStatus">Microphone ready</span>
+          </div>
+        </div>
+
+        <button class="icon-button" id="themeButton" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+          <svg class="sun-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg>
+          <svg class="moon-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 15.2A8.2 8.2 0 0 1 8.8 4a8.3 8.3 0 1 0 11.2 11.2Z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="assistant" id="home" aria-labelledby="stateTitle">
+      <div class="identity-row">
+        <div class="speaker-chip" id="speakerChip" data-recognition="unknown" aria-live="polite">
+          <span class="speaker-avatar" id="speakerAvatar" aria-hidden="true">—</span>
+          <span class="speaker-copy">
+            <strong id="speakerName">No face recognized</strong>
+            <small id="speakerConfidence">Looking for a clear face</small>
+          </span>
+          <span class="speaker-presence" aria-hidden="true"></span>
+        </div>
+
+        <button class="privacy-control" id="privacyToggle" type="button" aria-pressed="false" aria-label="Pause camera and microphone">
+          <span class="privacy-dot" aria-hidden="true"></span>
+          <span id="privacyStatus">Private &amp; listening</span>
+        </button>
+      </div>
+
+      <div class="conversation" aria-live="polite">
+        <button class="orb" id="micButton" type="button" aria-label="Start listening to Echo Q">
+          <span class="orb__core" aria-hidden="true">
+            <span class="waveform" id="waveform">
+              <i></i><i></i><i></i><i></i><i></i>
+            </span>
+          </span>
+          <span class="orb__ring" aria-hidden="true"></span>
+        </button>
+
+        <div class="state-copy">
+          <span class="eyebrow" id="assistantState">Echo Q is ready</span>
+          <h1 id="stateTitle">Just speak naturally.</h1>
+          <p id="stateDetail">I’m continuously listening for reminders and calendar requests.</p>
+        </div>
+
+        <blockquote class="transcript" id="liveTranscript" data-empty="true">
+          <span class="transcript__mark" aria-hidden="true">“</span>
+          <span id="transcript">“Remind me to drink water every hour.”</span>
+        </blockquote>
+      </div>
+
+      <form class="command" id="commandForm" autocomplete="off">
+        <label class="sr-only" for="commandInput">Type a reminder or calendar request</label>
+        <input id="commandInput" name="command" type="text" inputmode="text" placeholder="Or type a request…" maxlength="240">
+        <button id="submitCommand" type="submit" aria-label="Send request">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 12 6-6 6 6M12 7v11"/></svg>
+        </button>
+      </form>
+    </section>
+
+    <aside class="next-card" id="nextReminderCard" aria-labelledby="nextReminderLabel">
+      <div class="next-card__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></svg>
+      </div>
+      <div class="next-card__copy">
+        <span class="eyebrow" id="nextReminderLabel">Next reminder</span>
+        <strong id="reminderTitle">Drink water</strong>
+        <span><span id="reminderSchedule">Every hour</span> · <span id="reminderPerson">For you</span></span>
+      </div>
+      <div class="next-card__time">
+        <strong id="nextReminder">10:00</strong>
+        <span id="reminderCountdown">in 19 min</span>
+      </div>
+      <button class="more-button" id="reminderDetailsButton" type="button" aria-label="Open reminder details">
+        <span></span><span></span><span></span>
+      </button>
+    </aside>
+
+    <nav class="dock" aria-label="Primary navigation">
+      <button class="dock__item is-active" type="button" data-view="home" aria-current="page">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V21h-6v-6H9v6H3Z"/></svg>
+        <span>Home</span>
+      </button>
+      <button class="dock__item" type="button" data-view="reminders">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/></svg>
+        <span>Reminders</span>
+      </button>
+      <button class="dock__item dock__item--action" id="quickListenButton" type="button" data-view="listen" aria-label="Listen">
+        <span class="dock__action-dot" aria-hidden="true"></span>
+      </button>
+      <button class="dock__item" type="button" data-view="calendar">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2ZM7 2v4M17 2v4M3 9h18"/></svg>
+        <span>Calendar</span>
+      </button>
+      <button class="dock__item" type="button" data-view="settings">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.1A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.1A1.7 1.7 0 0 0 4.6 8.5a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.1A1.7 1.7 0 0 0 15.5 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.1.4.3.7.6 1 .3.3.7.4 1.1.4h.1v4h-.1c-.4 0-.8.2-1.1.6Z"/></svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+  </main>
+
+  <section class="onboarding" id="enableOverlay" role="dialog" aria-modal="true" aria-labelledby="enableTitle" aria-describedby="enableDescription">
+    <div class="onboarding__card">
+      <div class="onboarding__mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      <span class="eyebrow">Your ambient assistant</span>
+      <h2 id="enableTitle">Meet Echo Q.</h2>
+      <p id="enableDescription">One tap enables hands-free listening and connects to the local vision service. After that, just speak—Echo Q recognizes who is talking and remembers what matters.</p>
+      <ul class="permission-list" aria-label="Permissions used">
+        <li><span aria-hidden="true">●</span><div><strong>Listens when you speak</strong><small>Voice stays under your control</small></div></li>
+        <li><span aria-hidden="true">●</span><div><strong>Recognizes familiar faces</strong><small>Identity processing stays local</small></div></li>
+      </ul>
+      <button class="enable-button" id="enableButton" type="button">
+        <span>Enable microphone &amp; start</span>
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg>
+      </button>
+      <p class="onboarding__status" id="onboardingStatus" role="status">Your browser may request microphone permission once. Face identity stays local.</p>
+    </div>
+  </section>
+
+  <section class="sheet" id="contentSheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+    <button class="sheet__backdrop" id="sheetBackdrop" type="button" aria-label="Close"></button>
+    <div class="sheet__panel">
+      <span class="sheet__handle" aria-hidden="true"></span>
+      <div class="sheet__header">
+        <div><span class="eyebrow" id="sheetEyebrow">Echo Q</span><h2 id="sheetTitle">Details</h2></div>
+        <button class="icon-button" id="closeSheetButton" type="button" aria-label="Close details">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <div id="sheetContent" class="sheet__content"></div>
+    </div>
+  </section>
+
+  <section class="sheet" id="calendarSheet" role="dialog" aria-modal="true" aria-labelledby="calendarEventTitle" hidden>
+    <button class="sheet__backdrop" id="calendarBackdrop" type="button" aria-label="Cancel calendar event"></button>
+    <div class="sheet__panel calendar-confirmation">
+      <span class="sheet__handle" aria-hidden="true"></span>
+      <span class="eyebrow">Ready for Google Calendar</span>
+      <h2 id="calendarEventTitle">Calendar event</h2>
+      <p id="calendarEventDate">Date</p>
+      <p class="calendar-confirmation__note">Review the details, then continue to Google Calendar to save.</p>
+      <div class="calendar-confirmation__actions">
+        <button class="sheet-button" id="cancelCalendar" type="button">Cancel</button>
+        <button class="sheet-button sheet-button--primary" id="confirmCalendar" type="button">Continue</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true" hidden>
+    <span class="toast__icon" aria-hidden="true">✓</span>
+    <div><strong id="toastTitle">Done</strong><span id="toastText">Your reminder has been saved.</span></div>
+  </div>
+
+  <div id="remindersList" hidden></div>
+
+  <div class="media-runtime" aria-hidden="true">
+    <video id="cameraVideo" autoplay muted playsinline></video>
+    <canvas id="faceCanvas"></canvas>
+  </div>
+</body>
+</html>

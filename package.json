@@ -1,0 +1,17 @@
+{
+  "name": "echo-q",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/start-echo.mjs",
+    "start:web": "node backend/server.mjs",
+    "start:vision": "face_recognition\\.venv\\Scripts\\python.exe face_recognition\\face_service.py",
+    "test": "node --test",
+    "test:vision": "face_recognition\\.venv\\Scripts\\python.exe -m unittest discover -s tests/face_recognition -p test_*.py",
+    "test:all": "npm test && npm run test:vision"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
