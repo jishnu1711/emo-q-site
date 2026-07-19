@@ -53,11 +53,16 @@ import { getSpeechRecognition } from "/speech_to_text/browser_speech_recognition
     sheetBackdrop: byId("sheetBackdrop"),
     reminderDetails: byId("reminderDetailsButton"),
     quickListen: byId("quickListenButton"),
+    robotFace: byId("robotFace"),
+    robotEmotion: byId("robotEmotionText"),
     clock: byId("clockTime"),
     date: byId("clockDate")
   };
 
   const SpeechRecognition = getSpeechRecognition();
+  const runtimePollDelays = Object.freeze({ active: 8000, speaking: 12000, idle: 20000 });
+  const speechSessionCooldownMs = 3500;
+  const speechFinalDelayMs = readNumberSetting("echo-q-speech-final-delay-ms", 5000, 500, 5000);
   const app = {
     enabled: localStorage.getItem("echo-q-enabled") === "true",
     recognition: null,
@@ -72,6 +77,7 @@ import { getSpeechRecognition } from "/speech_to_text/browser_speech_recognition
     speechBlocked: false,
     lastSpeechError: "",
     manualRestart: false,
+    lastSpeechSessionAt: 0,
     runtimePollTimer: null,
     currentCalendarUrl: "",
     reminders: [],
@@ -79,7 +85,37 @@ import { getSpeechRecognition } from "/speech_to_text/browser_speech_recognition
     paused: false
   };
 
+  function runtimePollDelay() {
+    if (document.hidden || app.paused) return runtimePollDelays.idle;
+    if (app.speechSession || document.documentElement.dataset.assistantState === "hearing" || document.documentElement.dataset.assistantState === "processing") return runtimePollDelays.speaking;
+    return runtimePollDelays.active;
+  }
+
+  function readNumberSetting(key, fallback, minimum, maximum) {
+    const value = Number.parseInt(localStorage.getItem(key) || "", 10);
+    if (!Number.isFinite(value)) return fallback;
+    return Math.min(maximum, Math.max(minimum, value));
+  }
   function setText(element, value) { if (element) element.textContent = value; }
+  function emotionForState(state, detail = "") {
+    const text = `${state} ${detail}`.toLowerCase();
+    if (state === "offline") return "off";
+    if (state === "hearing") return "listening";
+    if (state === "processing") return "thinking";
+    if (state === "done") return "happy";
+    if (/error|unavailable|denied|blocked|wrong|failed|couldn.t|sorry/.test(text)) return "error";
+    return "calm";
+  }
+  function setFaceEmotion(emotion) {
+    const normalized = ({ neutral: "calm", ready: "calm", paused: "off", listening: "listening", recognizing: "thinking" })[emotion] || emotion || "calm";
+    document.documentElement.dataset.faceEmotion = normalized;
+    if (ui.app) ui.app.dataset.faceEmotion = normalized;
+    if (ui.robotFace) {
+      ui.robotFace.dataset.emotion = normalized;
+      ui.robotFace.setAttribute("aria-label", `Echo Q face, ${normalized.replace(/_/g, " ")}`);
+    }
+    setText(ui.robotEmotion, `Emotion: ${normalized.replace(/_/g, " ")}`);
+  }
   function setState(state, detail = "") {
     document.documentElement.dataset.assistantState = state;
     if (ui.app) ui.app.dataset.assistantState = state;
@@ -91,6 +127,7 @@ import { getSpeechRecognition } from "/speech_to_text/browser_speech_recognition
       offline: ["Echo Q is paused", "Listening is off."]
     };
     const label = labels[state] || [state, state]; setText(ui.state, label[0]); setText(ui.stateTitle, label[1]);
+    setFaceEmotion(emotionForState(state, detail));
     if (detail) { setText(ui.stateDetail, detail); setText(ui.transcript, detail); ui.liveTranscript?.removeAttribute("data-empty"); }
   }
   function setSpeechDiagnostic(status, detail) {
@@ -184,7 +221,7 @@ import { getSpeechRecognition } from "/speech_to_text/browser_speech_recognition
     clearTimeout(app.runtimePollTimer);
     try { applyRuntimeSnapshot(await api("/api/runtime")); }
     catch { applyRuntimeSnapshot({ vision: { online: false, ready: false }, identity: { name: "Unknown" } }); }
-    app.runtimePollTimer = setTimeout(pollRuntime, 500);
+    app.runtimePollTimer = setTimeout(pollRuntime, runtimePollDelay());
   }
   function renderReminders(reminders) {
     app.reminders = reminders || [];
@@ -217,6 +254,9 @@ import { getSpeechRecognition } from "/speech_to_text/browser_speech_recognition
   }
 
   async function beginSpeechSession(detail = "I’m listening…") {
+    const startedAt = Date.now();
+    if (app.speechSession || startedAt - app.lastSpeechSessionAt < speechSessionCooldownMs) return app.speechSession;
+    app.lastSpeechSessionAt = startedAt;
     setState("hearing", detail);
     const pending = api("/api/speech/start", { method: "POST", body: "{}" });
     app.speechSession = pending;
@@ -287,13 +327,13 @@ import { getSpeechRecognition } from "/speech_to_text/browser_speech_recognition
       if (interim) { setState("hearing"); setText(ui.transcript, interim); }
       if (app.utteranceText) {
         clearTimeout(app.finalTimer);
-        app.finalTimer = setTimeout(() => { const text = app.utteranceText; app.utteranceText = ""; handleSpokenUtterance(text); }, 220);
+        app.finalTimer = setTimeout(() => { const text = app.utteranceText; app.utteranceText = ""; handleSpokenUtterance(text); }, speechFinalDelayMs);
       }
     };
     recognition.onspeechend = () => {
       if (!app.utteranceText) return;
       clearTimeout(app.finalTimer);
-      app.finalTimer = setTimeout(() => { const text = app.utteranceText; app.utteranceText = ""; handleSpokenUtterance(text); }, 120);
+      app.finalTimer = setTimeout(() => { const text = app.utteranceText; app.utteranceText = ""; handleSpokenUtterance(text); }, speechFinalDelayMs);
     };
     recognition.onerror = event => {
       const error = event.error || "unknown";

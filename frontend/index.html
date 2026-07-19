@@ -64,14 +64,47 @@
       </div>
 
       <div class="conversation" aria-live="polite">
-        <button class="orb" id="micButton" type="button" aria-label="Start listening to Echo Q">
-          <span class="orb__core" aria-hidden="true">
-            <span class="waveform" id="waveform">
-              <i></i><i></i><i></i><i></i><i></i>
+        <div class="robot-face-card">
+          <div class="robot-face" id="robotFace" role="img" aria-label="Echo Q face, calm" data-emotion="calm">
+            <div class="robot-face__halo" aria-hidden="true"></div>
+            <svg class="robot-face__svg" viewBox="0 0 280 220" aria-hidden="true">
+              <defs>
+                <linearGradient id="faceShellGradient" x1="30" x2="250" y1="20" y2="210" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="currentColor" stop-opacity="0.18"/>
+                  <stop offset="1" stop-color="currentColor" stop-opacity="0.04"/>
+                </linearGradient>
+              </defs>
+              <rect class="robot-face__shell" x="28" y="20" width="224" height="176" rx="64"/>
+              <g class="robot-face__eyes">
+                <g class="robot-face__eye robot-face__eye--left">
+                  <ellipse class="robot-face__eye-bg" cx="94" cy="92" rx="34" ry="29"/>
+                  <circle class="robot-face__pupil" cx="94" cy="92" r="12"/>
+                  <path class="robot-face__lid" d="M60 92c10-18 58-18 68 0"/>
+                </g>
+                <g class="robot-face__eye robot-face__eye--right">
+                  <ellipse class="robot-face__eye-bg" cx="186" cy="92" rx="34" ry="29"/>
+                  <circle class="robot-face__pupil" cx="186" cy="92" r="12"/>
+                  <path class="robot-face__lid" d="M152 92c10-18 58-18 68 0"/>
+                </g>
+              </g>
+              <path class="robot-face__mouth robot-face__mouth--smile" d="M94 139c20 24 72 24 92 0"/>
+              <path class="robot-face__mouth robot-face__mouth--neutral" d="M105 146c19 7 51 7 70 0"/>
+              <path class="robot-face__mouth robot-face__mouth--sad" d="M100 160c22-21 58-21 80 0"/>
+              <path class="robot-face__cheek robot-face__cheek--left" d="M55 130h26"/>
+              <path class="robot-face__cheek robot-face__cheek--right" d="M199 130h26"/>
+            </svg>
+            <span class="sr-only" id="robotEmotionText">Emotion: calm</span>
+          </div>
+
+          <button class="orb" id="micButton" type="button" aria-label="Start listening to Echo Q">
+            <span class="orb__core" aria-hidden="true">
+              <span class="waveform" id="waveform">
+                <i></i><i></i><i></i><i></i><i></i>
+              </span>
             </span>
-          </span>
-          <span class="orb__ring" aria-hidden="true"></span>
-        </button>
+            <span class="orb__ring" aria-hidden="true"></span>
+          </button>
+        </div>
 
         <div class="state-copy">
           <span class="eyebrow" id="assistantState">Echo Q is ready</span>

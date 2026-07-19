@@ -39,7 +39,7 @@ html, body {
   width: 100%;
   height: 100%;
   margin: 0;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 body {
@@ -76,10 +76,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid color-mix(in srgb
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: clamp(14px, 2vw, 24px);
   width: min(1180px, calc(100% - 32px));
-  height: min(820px, calc(100dvh - 32px));
+  min-height: min(820px, calc(100dvh - 32px));
+  max-height: calc(100dvh - 32px);
   margin: 16px auto;
   padding: clamp(18px, 2.4vw, 32px);
-  overflow: hidden;
+  overflow: auto;
   border: 1px solid var(--line);
   border-radius: 36px;
   background: color-mix(in srgb, var(--surface) 70%, transparent);
@@ -117,7 +118,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid color-mix(in srgb
 html[data-theme="dark"] .sun-icon { display: none; }
 html[data-theme="dark"] .moon-icon { display: block; }
 
-.assistant { display: flex; min-width: 0; min-height: 0; flex-direction: column; justify-content: space-between; padding: clamp(18px, 2.2vw, 28px); border: 1px solid var(--line); border-radius: 28px; background: var(--surface); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5); backdrop-filter: blur(24px) saturate(130%); -webkit-backdrop-filter: blur(24px) saturate(130%); }
+.assistant { display: flex; min-width: 0; min-height: 0; flex-direction: column; justify-content: space-between; gap: clamp(12px, 2vh, 20px); padding: clamp(18px, 2.2vw, 28px); border: 1px solid var(--line); border-radius: 28px; background: var(--surface); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5); backdrop-filter: blur(24px) saturate(130%); -webkit-backdrop-filter: blur(24px) saturate(130%); }
 .identity-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .speaker-chip, .privacy-control { display: flex; align-items: center; min-width: 0; border: 1px solid var(--line); background: var(--surface-raised); box-shadow: inset 0 1px 0 rgba(255,255,255,.38); }
 .speaker-chip { gap: 9px; padding: 6px 12px 6px 6px; border-radius: 99px; }
@@ -137,8 +138,22 @@ html[data-theme="dark"] .moon-icon { display: block; }
 .privacy-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
 .privacy-control[aria-pressed="true"] .privacy-dot { background: var(--tertiary); }
 
-.conversation { display: grid; justify-items: center; align-content: center; min-height: 0; padding: 10px 0; text-align: center; }
-.orb { position: relative; display: grid; width: clamp(98px, 11vw, 126px); height: clamp(98px, 11vw, 126px); margin-bottom: clamp(20px, 3vh, 32px); place-items: center; border-radius: 50%; background: transparent; }
+.conversation { display: grid; justify-items: center; align-content: center; gap: clamp(12px, 2vh, 22px); min-height: 0; padding: 8px 0; text-align: center; }
+.robot-face-card { position: relative; display: grid; place-items: center; width: min(100%, clamp(210px, 31vw, 360px)); margin-inline: auto; }
+.robot-face { --face-accent: var(--orange); --face-eye-scale: 1; --face-mouth-shift: 0px; position: relative; display: grid; width: min(100%, clamp(196px, 28vw, 320px)); aspect-ratio: 1.27; place-items: center; color: var(--face-accent); filter: drop-shadow(0 24px 45px color-mix(in srgb, var(--face-accent) 16%, transparent)); transform-origin: 50% 65%; animation: face-float 5.2s ease-in-out infinite; transition: color .45s ease, filter .45s ease, transform .45s var(--ease); }
+.robot-face__halo { position: absolute; inset: 12%; border-radius: 40%; background: radial-gradient(circle, color-mix(in srgb, var(--face-accent) 22%, transparent), transparent 68%); opacity: .72; transform: scale(1.08); animation: face-breathe 3.8s ease-in-out infinite; }
+.robot-face__svg { position: relative; z-index: 1; width: 100%; height: 100%; overflow: visible; }
+.robot-face__shell { fill: color-mix(in srgb, var(--surface-solid) 84%, transparent); stroke: color-mix(in srgb, var(--face-accent) 25%, var(--line-strong)); stroke-width: 2; filter: drop-shadow(0 12px 28px rgba(20, 18, 14, .08)); }
+.robot-face__eyes { animation: eyes-look 7.5s ease-in-out infinite; transform-origin: 140px 92px; transition: transform .45s var(--ease); }
+.robot-face__eye-bg { fill: color-mix(in srgb, var(--ink) 8%, var(--surface-solid)); stroke: color-mix(in srgb, var(--face-accent) 30%, transparent); stroke-width: 1.5; transform-box: fill-box; transform-origin: center; animation: blink 6.2s infinite; transition: transform .45s var(--ease), fill .45s ease; }
+.robot-face__pupil { fill: var(--face-accent); transform-box: fill-box; transform-origin: center; transition: transform .45s var(--ease), r .45s var(--ease), opacity .35s ease; }
+.robot-face__lid { fill: none; stroke: color-mix(in srgb, var(--ink) 55%, transparent); stroke-width: 7; stroke-linecap: round; opacity: 0; transform-box: fill-box; transform-origin: center; transition: opacity .35s ease, transform .45s var(--ease); }
+.robot-face__mouth, .robot-face__cheek { fill: none; stroke: var(--face-accent); stroke-linecap: round; stroke-linejoin: round; transition: opacity .35s ease, transform .45s var(--ease), stroke .45s ease; }
+.robot-face__mouth { stroke-width: 10; opacity: 0; transform-origin: 140px 148px; }
+.robot-face__mouth--neutral { stroke-width: 8; opacity: 1; }
+.robot-face__cheek { stroke-width: 5; opacity: 0; }
+.robot-face-card .orb { position: absolute; right: clamp(0px, 1vw, 10px); bottom: clamp(-5px, -.8vw, 2px); z-index: 3; width: clamp(58px, 7vw, 78px); height: clamp(58px, 7vw, 78px); margin: 0; }
+.orb { position: relative; display: grid; width: clamp(98px, 11vw, 126px); height: clamp(98px, 11vw, 126px); place-items: center; border-radius: 50%; background: transparent; }
 .orb__core { position: relative; z-index: 2; display: grid; width: 72%; height: 72%; place-items: center; color: white; background: radial-gradient(circle at 36% 27%, #ffad7b 0, var(--orange) 38%, #e74c0f 100%); border-radius: 50%; box-shadow: 0 14px 34px rgba(239, 82, 17, .27), inset 0 1px 1px rgba(255,255,255,.5); transition: transform .45s var(--ease); }
 .orb__ring { position: absolute; inset: 4px; border: 1px solid color-mix(in srgb, var(--orange) 28%, transparent); border-radius: inherit; box-shadow: inset 0 0 25px color-mix(in srgb, var(--orange) 8%, transparent); }
 .orb:hover .orb__core { transform: scale(1.055); }
@@ -175,6 +190,55 @@ html[data-assistant-state="offline"] .privacy-control .privacy-dot,
 @keyframes recognize-ring { to { transform: rotate(360deg); } }
 @keyframes save-breathe { to { transform: scale(.92); opacity: .82; } }
 @keyframes waiting-ring { 50% { inset: -3px; opacity: .45; } }
+@keyframes face-float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(1.012); } }
+@keyframes face-breathe { 0%, 100% { opacity: .48; transform: scale(1.02); } 50% { opacity: .82; transform: scale(1.13); } }
+@keyframes blink { 0%, 91%, 94%, 100% { transform: scaleY(1); } 92.5% { transform: scaleY(.08); } }
+@keyframes eyes-look { 0%, 22%, 100% { transform: translateX(0); } 35%, 45% { transform: translateX(-7px); } 62%, 72% { transform: translateX(7px); } }
+@keyframes listening-pulse { 50% { transform: scale(1.035); filter: drop-shadow(0 26px 55px color-mix(in srgb, var(--face-accent) 28%, transparent)); } }
+@keyframes thinking-look { 0%, 100% { transform: translateX(-9px) translateY(-2px); } 33% { transform: translateX(8px) translateY(2px); } 66% { transform: translateX(0) translateY(-6px); } }
+
+html[data-face-emotion="happy"] .robot-face { --face-accent: var(--green); animation: face-float 2.5s ease-in-out infinite; }
+html[data-face-emotion="happy"] .robot-face__eyes { transform: translateY(-2px); }
+html[data-face-emotion="happy"] .robot-face__eye-bg { transform: scale(1.08); fill: color-mix(in srgb, var(--green) 12%, var(--surface-solid)); }
+html[data-face-emotion="happy"] .robot-face__pupil { transform: scale(1.12); }
+html[data-face-emotion="happy"] .robot-face__mouth--smile { opacity: 1; transform: translateY(-1px); }
+html[data-face-emotion="happy"] .robot-face__mouth--neutral,
+html[data-face-emotion="happy"] .robot-face__mouth--sad { opacity: 0; }
+html[data-face-emotion="happy"] .robot-face__cheek { opacity: .42; }
+
+html[data-face-emotion="listening"] .robot-face { --face-accent: var(--orange); animation: face-float 4s ease-in-out infinite, listening-pulse 1.8s ease-in-out infinite; }
+html[data-face-emotion="listening"] .robot-face__eye-bg { transform: scale(1.12); }
+html[data-face-emotion="listening"] .robot-face__pupil { transform: translateY(-1px) scale(1.08); }
+html[data-face-emotion="listening"] .robot-face__mouth--neutral { opacity: 1; transform: translateY(-2px); }
+
+html[data-face-emotion="thinking"] .robot-face { --face-accent: #8c7cf0; }
+html[data-face-emotion="thinking"] .robot-face__eyes { animation: thinking-look 2.4s ease-in-out infinite; }
+html[data-face-emotion="thinking"] .robot-face__pupil { transform: scale(.86); }
+html[data-face-emotion="thinking"] .robot-face__mouth--neutral { opacity: 1; transform: rotate(-3deg); }
+
+html[data-face-emotion="sad"] .robot-face { --face-accent: #6f8fc8; animation-duration: 7s; filter: drop-shadow(0 18px 38px rgba(65, 86, 128, .14)); }
+html[data-face-emotion="sad"] .robot-face__eyes { transform: translateY(8px); animation: none; }
+html[data-face-emotion="sad"] .robot-face__eye-bg { transform: scaleY(.72); }
+html[data-face-emotion="sad"] .robot-face__pupil { transform: translateY(5px) scale(.86); opacity: .8; }
+html[data-face-emotion="sad"] .robot-face__mouth--sad { opacity: 1; }
+html[data-face-emotion="sad"] .robot-face__mouth--neutral,
+html[data-face-emotion="sad"] .robot-face__mouth--smile { opacity: 0; }
+
+html[data-face-emotion="error"] .robot-face { --face-accent: #d78a39; animation-duration: 6.5s; }
+html[data-face-emotion="error"] .robot-face__eyes { transform: translateY(3px); animation: none; }
+html[data-face-emotion="error"] .robot-face__eye--left .robot-face__lid { opacity: .7; transform: rotate(10deg) translateY(-5px); }
+html[data-face-emotion="error"] .robot-face__eye--right .robot-face__lid { opacity: .7; transform: rotate(-10deg) translateY(-5px); }
+html[data-face-emotion="error"] .robot-face__mouth--sad { opacity: .9; transform: scaleX(.72) translateY(-4px); }
+html[data-face-emotion="error"] .robot-face__mouth--neutral,
+html[data-face-emotion="error"] .robot-face__mouth--smile { opacity: 0; }
+
+html[data-face-emotion="off"] .robot-face { --face-accent: var(--tertiary); animation: none; filter: none; opacity: .78; }
+html[data-face-emotion="off"] .robot-face__halo { animation: none; opacity: .18; }
+html[data-face-emotion="off"] .robot-face__eyes { animation: none; }
+html[data-face-emotion="off"] .robot-face__eye-bg { transform: scaleY(.08); fill: color-mix(in srgb, var(--ink) 13%, var(--surface-solid)); }
+html[data-face-emotion="off"] .robot-face__pupil { opacity: 0; }
+html[data-face-emotion="off"] .robot-face__lid { opacity: .45; }
+html[data-face-emotion="off"] .robot-face__mouth--neutral { opacity: .55; transform: scaleX(.6); }
 .state-copy { max-width: 610px; }
 .eyebrow { display: block; color: var(--orange); font-size: 9px; font-weight: 760; letter-spacing: .11em; text-transform: uppercase; }
 .state-copy h1 { margin: 8px 0 9px; font-size: clamp(28px, 4.1vw, 52px); line-height: .98; letter-spacing: -.058em; text-wrap: balance; }
@@ -281,7 +345,7 @@ html[data-theme="dark"] .onboarding { background: rgba(4, 5, 6, .68); }
 }
 
 @media (max-width: 760px) {
-  .shell { grid-template-columns: 1fr; grid-template-rows: auto minmax(0,1fr) auto auto; width: calc(100% - 16px); height: calc(100dvh - 16px); margin: 8px; padding: 14px; gap: 10px; border-radius: 28px; }
+  .shell { grid-template-columns: 1fr; grid-template-rows: auto minmax(0,1fr) auto auto; width: calc(100% - 16px); min-height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); margin: 8px; padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); gap: 10px; border-radius: 28px; }
   .topbar { grid-row: 1; min-height: 34px; }
   .brand { font-size: 13px; }
   .brand__mark { width: 28px; height: 28px; border-radius: 9px; }
@@ -298,8 +362,10 @@ html[data-theme="dark"] .onboarding { background: rgba(4, 5, 6, .68); }
   .privacy-control span:last-child { display: none; }
   html[data-assistant-state="offline"] .privacy-control span:last-child,
   .shell[data-assistant-state="offline"] .privacy-control span:last-child { display: inline; }
-  .conversation { padding: 5px 0; }
-  .orb { width: clamp(82px, 13vh, 108px); height: clamp(82px, 13vh, 108px); margin-bottom: clamp(10px, 2vh, 18px); }
+  .conversation { padding: 5px 0; gap: clamp(8px, 1.4vh, 14px); }
+  .robot-face-card { width: min(100%, clamp(190px, 38vh, 280px)); }
+  .robot-face { width: min(100%, clamp(180px, 35vh, 255px)); }
+  .robot-face-card .orb { width: clamp(54px, 9vh, 68px); height: clamp(54px, 9vh, 68px); }
   .state-copy h1 { margin: 6px auto 7px; max-width: 340px; font-size: clamp(27px, 8vw, 38px); }
   .state-copy p { max-width: 330px; font-size: 10px; }
   .transcript { margin-top: clamp(8px, 1.5vh, 15px); font-size: 10px; }
@@ -346,7 +412,10 @@ html[data-theme="dark"] .onboarding { background: rgba(4, 5, 6, .68); }
   .assistant { padding: 10px; }
   .speaker-avatar { width: 26px; height: 26px; }
   .privacy-control { padding: 7px; }
-  .orb { width: 72px; height: 72px; margin-bottom: 7px; }
+  .conversation { padding: 3px 0; gap: 7px; }
+  .robot-face-card { width: min(100%, 200px); }
+  .robot-face { width: min(100%, 188px); }
+  .robot-face-card .orb { width: 50px; height: 50px; }
   .state-copy h1 { margin: 4px 0; font-size: clamp(23px, 6vh, 31px); }
   .state-copy p { display: none; }
   .transcript { margin-top: 6px; min-height: 18px; }
@@ -363,6 +432,37 @@ html[data-theme="dark"] .onboarding { background: rgba(4, 5, 6, .68); }
   .permission-list { margin: 16px 0; }
 }
 
+@media (orientation: landscape) and (max-height: 600px) {
+  .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; width: calc(100% - 12px); min-height: calc(100dvh - 12px); max-height: calc(100dvh - 12px); margin: 6px; padding: 8px; gap: 8px; border-radius: 24px; }
+  .topbar { grid-template-columns: auto 1fr auto; min-height: 30px; }
+  .clock span { display: none; }
+  .system-status { max-width: 44vw; overflow: hidden; }
+  .status-pill { min-width: 0; }
+  .status-pill > span:last-child { max-width: 84px; overflow: hidden; text-overflow: ellipsis; }
+  .assistant { display: grid; grid-template-columns: minmax(180px, 38%) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; align-items: stretch; gap: 8px 12px; padding: 10px; overflow: hidden; }
+  .identity-row { grid-column: 1 / -1; min-width: 0; }
+  .conversation { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(168px, 38%) minmax(0, 1fr); align-items: center; justify-items: stretch; gap: 12px; padding: 0; text-align: left; }
+  .robot-face-card { width: min(100%, 210px); justify-self: center; }
+  .robot-face { width: min(100%, 198px); }
+  .robot-face-card .orb { right: 0; bottom: 0; width: 48px; height: 48px; }
+  .state-copy { max-width: none; min-width: 0; }
+  .state-copy h1 { max-width: none; margin: 3px 0 5px; font-size: clamp(22px, 7vh, 34px); }
+  .state-copy p { display: block; max-width: 52ch; font-size: 10px; line-height: 1.35; }
+  .transcript { grid-column: 2; max-width: none; margin-top: 6px; font-size: 10px; line-height: 1.35; }
+  .command { grid-column: 2; align-self: end; width: 100%; padding: 4px 5px 4px 12px; }
+  .command input { padding: 4px 0; }
+  .command button { width: 30px; height: 30px; }
+  .next-card { grid-row: auto; grid-template-columns: auto minmax(0, 1fr) auto; padding: 9px 12px; border-radius: 18px; }
+  .next-card__icon { width: 32px; height: 32px; }
+  .next-card__copy strong { font-size: 12px; }
+  .next-card__time strong { font-size: 15px; }
+  .dock { width: min(430px, 100%); padding: 4px; }
+  .dock__item { min-height: 34px; }
+  .dock__item span { display: none; }
+  .dock__action-dot { width: 28px; height: 28px; border-width: 5px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .robot-face, .robot-face__halo, .robot-face__eyes, .robot-face__eye-bg { animation: none !important; }
 }

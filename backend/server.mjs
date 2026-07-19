@@ -1,6 +1,9 @@
+import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
+import { createServer as createSecureServer } from "node:https";
 import { dirname, extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,6 +13,9 @@ const speechToTextDirectory = resolve(projectDirectory, "speech_to_text");
 const defaultStateFile = resolve(projectDirectory, "storage", "state.json");
 const defaultVisionUrl = process.env.ECHO_Q_VISION_URL ?? "http://127.0.0.1:8001";
 const port = Number.parseInt(process.env.PORT ?? "3000", 10);
+const motorEmotionHelper = resolve(projectDirectory, "scripts", "play_motor_emotion.py");
+const motorEmotionCooldownMs = Number.parseInt(process.env.ECHO_Q_MOTOR_EMOTION_COOLDOWN_MS ?? "7000", 10);
+const motorEmotionEnabled = process.env.ECHO_Q_MOTOR_EMOTION_ENABLED === "1";
 
 const mimeTypes = {
   ".bin": "application/octet-stream", ".css": "text/css; charset=utf-8",
@@ -164,6 +170,8 @@ export function createEchoServer(options = {}) {
   const clients = new Set();
   const timers = new Map();
   let writeChain = Promise.resolve();
+  let motorEmotionBusy = false;
+  let lastMotorEmotionAt = 0;
 
   async function readState() {
     try {
@@ -196,6 +204,31 @@ export function createEchoServer(options = {}) {
   function emit(type, data) {
     const packet = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
     for (const client of clients) client.write(packet);
+  }
+
+  function triggerMotorEmotion(emotion) {
+    if (!motorEmotionEnabled || options.motorEmotion === false) return;
+    if (!["happy", "confused", "idle"].includes(emotion)) return;
+    const nowMs = Date.now();
+    if (motorEmotionBusy || nowMs - lastMotorEmotionAt < motorEmotionCooldownMs) return;
+    motorEmotionBusy = true;
+    lastMotorEmotionAt = nowMs;
+
+    const python = process.env.ECHO_Q_MOTOR_PYTHON || process.env.ECHO_Q_PYTHON || "python3";
+    const child = spawn(python, [motorEmotionHelper, emotion], {
+      cwd: projectDirectory,
+      env: process.env,
+      stdio: ["ignore", "ignore", "pipe"]
+    });
+    const killTimer = setTimeout(() => child.kill("SIGTERM"), 12_000);
+    killTimer.unref();
+    child.stderr.on("data", chunk => console.warn(String(chunk).trim()));
+    child.on("error", error => console.warn(`[motor-emotion] skipped ${emotion}: ${error.message}`));
+    child.on("close", code => {
+      clearTimeout(killTimer);
+      motorEmotionBusy = false;
+      if (code) console.warn(`[motor-emotion] ${emotion} exited with code ${code}`);
+    });
   }
 
   function schedule(reminder) {
@@ -240,14 +273,16 @@ export function createEchoServer(options = {}) {
     response.end(JSON.stringify(payload));
   }
 
-  const server = createServer(async (request, response) => {
+  const serverFactory = options.tls ? handler => createSecureServer(options.tls, handler) : createServer;
+  const server = serverFactory(async (request, response) => {
     try {
       const url = new URL(request.url, "http://localhost");
       if (url.pathname === "/api/events" && request.method === "GET") {
         response.writeHead(200, { "Cache-Control": "no-cache", Connection: "keep-alive", "Content-Type": "text/event-stream", "X-Accel-Buffering": "no" });
         response.write(`event: connected\ndata: {"online":true}\n\n`);
+        const keepAlive = setInterval(() => response.write(`: keepalive ${Date.now()}\n\n`), 15_000);
         clients.add(response);
-        request.on("close", () => clients.delete(response));
+        request.on("close", () => { clearInterval(keepAlive); clients.delete(response); });
         return;
       }
       if (url.pathname === "/api/status" && request.method === "GET") {
@@ -279,6 +314,7 @@ export function createEchoServer(options = {}) {
       if (url.pathname === "/api/vision/camera" && request.method === "POST") {
         const body = await readJson(request);
         if (typeof body.paused !== "boolean") return sendJson(response, 400, { error: "paused must be a boolean." });
+        if (body.paused) triggerMotorEmotion("idle");
         try {
           const action = body.paused ? "pause" : "resume";
           const upstream = await fetcher(`${visionUrl}/camera/${action}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", signal: AbortSignal.timeout(1_500) });
@@ -291,7 +327,7 @@ export function createEchoServer(options = {}) {
 
       if (url.pathname === "/api/speech/start" && request.method === "POST") {
         const identity = await latestIdentity();
-        const session = { id: crypto.randomUUID(), identity, startedAt: now().toISOString() };
+        const session = { id: randomUUID(), identity, startedAt: now().toISOString() };
         sessions.set(session.id, session);
         setTimeout(() => sessions.delete(session.id), 30_000).unref?.();
         emit("assistant-state", { state: "hearing", identity });
@@ -308,13 +344,14 @@ export function createEchoServer(options = {}) {
         if (intent.type === "empty" || intent.type === "unknown") {
           const reply = intent.type === "empty" ? RESPONSES.empty : RESPONSES.unknown;
           emit("assistant-state", { state: "ready", reply });
+          triggerMotorEmotion("confused");
           return sendJson(response, 422, { intent, identity, reply });
         }
         const state = await readState();
         if (intent.type === "reminder") {
           const createdAt = now();
           const reminder = {
-            id: crypto.randomUUID(), title: intent.title, speaker, identityConfidence: identity.confidence,
+            id: randomUUID(), title: intent.title, speaker, identityConfidence: identity.confidence,
             frequency: intent.frequency, intervalMs: intent.intervalMs, oneShot: Boolean(intent.oneShot), active: true,
             createdAt: createdAt.toISOString(), nextAt: new Date(createdAt.getTime() + intent.intervalMs).toISOString()
           };
@@ -323,15 +360,17 @@ export function createEchoServer(options = {}) {
           const reply = RESPONSES.reminder(speaker === "Unknown" ? "" : speaker, reminder.title, reminder.frequency);
           const result = { intent, identity, reminder, reply };
           emit("reminder-created", result); emit("assistant-state", { state: "done", reply });
+          triggerMotorEmotion("happy");
           return sendJson(response, 201, result);
         }
-        const event = { id: crypto.randomUUID(), title: intent.title, date: intent.date, speaker, status: "opened_for_confirmation", createdAt: now().toISOString() };
+        const event = { id: randomUUID(), title: intent.title, date: intent.date, speaker, status: "opened_for_confirmation", createdAt: now().toISOString() };
         event.calendarUrl = buildGoogleCalendarUrl(event);
         state.calendarEvents.unshift(event); state.calendarEvents = state.calendarEvents.slice(0, 100);
         await saveState(state);
         const reply = RESPONSES.calendar(speaker === "Unknown" ? "" : speaker, event.title, event.date);
         const result = { intent, identity, event, reply };
         emit("calendar-created", result); emit("assistant-state", { state: "done", reply });
+        triggerMotorEmotion("happy");
         return sendJson(response, 201, result);
       }
 
@@ -342,7 +381,7 @@ export function createEchoServer(options = {}) {
         const identity = normalizeIdentity({ name: cleanText(body.speaker) || "Unknown", confidence: body.speaker ? 1 : 0 });
         const intent = parseIntent(transcript, now());
         const state = await readState(); const createdAt = now();
-        const reminder = { id: crypto.randomUUID(), title: intent.title, speaker: identity.name, identityConfidence: identity.confidence, frequency: intent.frequency, intervalMs: intent.intervalMs, oneShot: Boolean(intent.oneShot), active: true, createdAt: createdAt.toISOString(), nextAt: new Date(createdAt.getTime() + intent.intervalMs).toISOString() };
+        const reminder = { id: randomUUID(), title: intent.title, speaker: identity.name, identityConfidence: identity.confidence, frequency: intent.frequency, intervalMs: intent.intervalMs, oneShot: Boolean(intent.oneShot), active: true, createdAt: createdAt.toISOString(), nextAt: new Date(createdAt.getTime() + intent.intervalMs).toISOString() };
         state.reminders.unshift(reminder); await saveState(state); schedule(reminder);
         return sendJson(response, 201, reminder);
       }
@@ -378,13 +417,18 @@ export function createEchoServer(options = {}) {
 export const server = createEchoServer();
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  server.on("error", error => {
+  const tls = process.env.ECHO_Q_TLS_KEY && process.env.ECHO_Q_TLS_CERT ? {
+    key: await readFile(process.env.ECHO_Q_TLS_KEY),
+    cert: await readFile(process.env.ECHO_Q_TLS_CERT)
+  } : null;
+  const runtimeServer = tls ? createEchoServer({ tls }) : server;
+  runtimeServer.on("error", error => {
     if (error.code === "EADDRINUSE") { console.error(`Port ${port} is already in use. Set PORT to choose another port.`); process.exitCode = 1; return; }
     throw error;
   });
-  await server.initialize();
-  server.listen(port, "0.0.0.0", () => {
-    console.log(`Echo Q: http://localhost:${port}`);
+  await runtimeServer.initialize();
+  runtimeServer.listen(port, "0.0.0.0", () => {
+    console.log(`Echo Q: ${tls ? "https" : "http"}://localhost:${port}`);
     console.log(`Vision service: ${defaultVisionUrl}`);
   });
 }
